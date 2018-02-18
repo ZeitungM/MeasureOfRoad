@@ -19,17 +19,24 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.location.Location;
 
+// Google APIs for Android
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
+
 public class MainActivity extends Activity implements LocationListener
 {
     private LocationManager _location_manager;
-    private static double _latitude  = 0.0;
-    private static double _longitude = 0.0;
+    private Location _current_location;
+    private static double _current_latitude  = 0.0;
+    private static double _current_longitude = 0.0;
 
     private static boolean _isRangingNow = false;
     private static double _start_latitude  = 0.0;
     private static double _start_longitude = 0.0;
-    private static double _end_latitude  = 0.0;
-    private static double _end_longitude = 0.0;
+    //private static double _end_latitude  = 0.0;
+    //private static double _end_longitude = 0.0;
+    private static double _total_distance = 0.0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -129,23 +136,14 @@ public class MainActivity extends Activity implements LocationListener
     // locationが変わった時呼ばれる
     public void onLocationChanged( android.location.Location location)
     {
-        // TODO:あとでgetLastKnownLocationするやつも試してみる
         //とりあえず対症療法的に、locationが変わる度にクラス変数に格納するやつやる
-        _latitude  = location.getLatitude();
-        _longitude = location.getLongitude();
+        _current_latitude  = location.getLatitude();
+        _current_longitude = location.getLongitude();
 
+        // テスト用テキスト表示領域になんか出力してみる
         TextView tmp_textView;
         tmp_textView = (TextView) findViewById(R.id.test_text);
         tmp_textView.setText("onLocationChanged");
-
-        //緯度と経度を取得し、フォーマットを整えてTextViewに書く
-        // 緯度
-        tmp_textView = (TextView) findViewById(R.id.value_latitude);
-        tmp_textView.setText(ToFormattedString(location.getLatitude()));
-        // 経度
-        tmp_textView = (TextView) findViewById(R.id.value_longitude);
-        tmp_textView.setText(ToFormattedString(location.getLongitude()));
-
     }
 
     @Override
@@ -160,12 +158,20 @@ public class MainActivity extends Activity implements LocationListener
 
     }
 
+    // このメソッドで経緯度を取得しているようだ( HACK: getLocation() の方がよくね？)
+    public void setLocation()
+    {
+        _current_latitude  = _current_location.getLatitude();
+        _current_longitude = _current_location.getLongitude();
+    }
+
     // 緯度・経度をフォーマットされた文字列に変換する
-    // ex1: 123.456789 → "+123.456789"
-    // ex2: 12.34      → "+ 12.34"
-    // ex3: -5.6789    → "-  5.6789"
+    // ex: 12.34      → "+ 12.34"
     public String ToFormattedString( double value)
     {
+        // ex1: 123.456789 → "+123.456789"
+        // ex2: 12.34      → "+ 12.34"
+        // ex3: -5.6789    → "-  5.6789"
         String formatted_string = "";
 
         // 符号をつける( 0より大きいなら"+"、0未満なら"-"をつける
@@ -190,7 +196,7 @@ public class MainActivity extends Activity implements LocationListener
         return formatted_string;
     }
 
-    //位置情報を取得する
+    //位置情報を取得する: ボタンが押されたときの処理
     public void GetGeographicalCoordinate(  )
     {
         Toast.makeText( this, "You pushed button!", Toast.LENGTH_LONG).show();
@@ -203,27 +209,27 @@ public class MainActivity extends Activity implements LocationListener
         // 対症療法的にクラス変数から引っ張ってくる
         // 緯度
         TextView textView_latitude = (TextView) findViewById(R.id.value_latitude);
-        textView_latitude.setText(ToFormattedString(_latitude));
+        textView_latitude.setText(ToFormattedString( _current_latitude ));
         // 経度
         TextView textView_longitude = (TextView) findViewById(R.id.value_longitude);
-        textView_longitude.setText(ToFormattedString(_longitude));
+        textView_longitude.setText(ToFormattedString( _current_longitude ));
 
         if(_isRangingNow)
         {
-            _end_latitude  = _latitude;
-            _end_longitude = _longitude;
             TextView tmp_textView;
             tmp_textView = (TextView) findViewById(R.id.value_ranging_finish_latitude);
-            tmp_textView.setText(ToFormattedString(_end_latitude));
+            tmp_textView.setText(ToFormattedString( _current_latitude ));
             tmp_textView = (TextView) findViewById(R.id.value_ranging_finish_longitude);
-            tmp_textView.setText(ToFormattedString(_end_longitude));
+            tmp_textView.setText(ToFormattedString( _current_longitude ));
             float[] distance = new float[3];
-            location.distanceBetween( _start_latitude, _start_longitude, _end_latitude, _end_longitude, distance);
+            location.distanceBetween( _start_latitude, _start_longitude, _current_latitude, _current_longitude, distance);
             tmp_textView = (TextView)findViewById(R.id.value_distance);
             tmp_textView.setText(""+distance[0]);
-            //位置情報取得ボタンのテキストを元に戻す
+            //_total_distance += distance[0];
+
+            //距離測定前の状態に戻す(  ボタンラベル、 bool) テスト用テキスト領域
             Button tmp_button = (Button)findViewById(R.id.button_get_location);
-            tmp_button.setText("位置情報を取得する");
+            tmp_button.setText("新たに距離の計測を開始する");
             _isRangingNow = false;
             tmp_textView = (TextView)findViewById(R.id.test_text);
             tmp_textView.setText("");
@@ -233,17 +239,17 @@ public class MainActivity extends Activity implements LocationListener
             //現在地を開始地点として、距離の計測を開始する
             _isRangingNow = true;
             //現在地を距離計測開始地点とする
-            _start_latitude  = _latitude;
-            _start_longitude = _longitude;
+            _start_latitude  = _current_latitude;
+            _start_longitude = _current_longitude;
             //距離計測開始地点をTextViewに表示する
             TextView tmp_textView;
             tmp_textView = (TextView) findViewById(R.id.value_ranging_start_latitude);
             tmp_textView.setText(ToFormattedString(_start_latitude));
             tmp_textView = (TextView) findViewById(R.id.value_ranging_start_longitude);
             tmp_textView.setText(ToFormattedString(_start_longitude));
-            //位置情報取得ボタンのテキストを、「距離を計算する」に変更する
+            //位置情報取得ボタンのテキストを、「距離の計測を終了する」に変更する
             Button tmp_button = (Button)findViewById(R.id.button_get_location);
-            tmp_button.setText("距離を計算する");
+            tmp_button.setText("距離の計測を終了する");
             tmp_textView = (TextView)findViewById(R.id.test_text);
             tmp_textView.setText("");
         }

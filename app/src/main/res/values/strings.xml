@@ -7,6 +7,7 @@
     <string name="value_latitude">hoge</string>
     <string name="value_longitude">fuga</string>
     <string name="label_button_get_location">位置情報を取得する</string>
+    <string name="label_switch_continuous_ranging">連続測距 </string>
 
     <!-- 測距関係 -->
     <string name="label_ranging_start_point">距離測定開始地点</string>

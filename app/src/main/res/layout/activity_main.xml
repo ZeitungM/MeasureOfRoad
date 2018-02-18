@@ -185,4 +185,14 @@
         android:layout_toRightOf="@+id/label_ranging_finish_longitude"
         android:layout_toEndOf="@+id/label_ranging_finish_longitude"/>
 
+    <Switch
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/label_switch_continuous_ranging"
+        android:id="@+id/continuous_ranging_switch"
+        android:layout_marginBottom="66dp"
+        android:layout_alignParentBottom="true"
+        android:checked="false"
+        android:clickable="false"/>
+
 </RelativeLayout>
