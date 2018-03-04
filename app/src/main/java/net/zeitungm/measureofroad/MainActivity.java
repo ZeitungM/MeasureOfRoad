@@ -9,10 +9,13 @@ import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.app.Activity;
 
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -23,11 +26,17 @@ import android.location.Location;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
+import com.google.android.gms.location.LocationServices;
 
-public class MainActivity extends Activity implements LocationListener
+
+public class MainActivity extends AppCompatActivity
+                          implements GoogleApiClient.ConnectionCallbacks,
+                                     GoogleApiClient.OnConnectionFailedListener,
+                                     LocationListener
 {
     private LocationManager _location_manager;
     private Location _current_location;
+    private GoogleApiClient _google_api_client;
     private static double _current_latitude  = 0.0;
     private static double _current_longitude = 0.0;
 
@@ -37,6 +46,14 @@ public class MainActivity extends Activity implements LocationListener
     //private static double _end_latitude  = 0.0;
     //private static double _end_longitude = 0.0;
     private static double _total_distance = 0.0;
+
+    protected synchronized void BuildGoogleApiClient()
+    {
+        _google_api_client = new GoogleApiClient.Builder(this).addConnectionCallbacks(this).addOnConnectionFailedListener(this).addApi(LocationServices.API).build();
+        // todo: 何かインクルードが必要らしい
+        //createLocationRequest();
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -131,6 +148,29 @@ public class MainActivity extends Activity implements LocationListener
                 break;
         }
     }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle)
+    {
+        // 接続時の処理
+        Toast.makeText( this, "Connected to GoogleAPIClient", Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public void onConnectionSuspended(int i)
+    {
+        // 接続がなくなったときの処理
+        Toast.makeText( this, "Connection to GoogleAPIClient Suspended", Toast.LENGTH_LONG).show();
+        _google_api_client.connect();
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connection_result)
+    {
+        //接続失敗時の処理
+        Toast.makeText( this, "Connection to GoogleAPIClient Failed", Toast.LENGTH_LONG).show();
+    }
+
 
     @Override
     // locationが変わった時呼ばれる
