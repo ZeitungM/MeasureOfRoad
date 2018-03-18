@@ -54,7 +54,7 @@ public class MainActivity extends AppCompatActivity
         //createLocationRequest();
     }
 
-
+    // Activity 生成時(初期化処理)
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
@@ -89,6 +89,22 @@ public class MainActivity extends AppCompatActivity
             // ここにパーミッションが許可されているときの動作を書く
             LocationStart();
         }
+    }
+
+    // Activity 開始時
+    @Override
+    protected void onStart()
+    {
+        _google_api_client.connect();
+        super.onStart();
+    }
+
+    // ユーザがActivityを離れたとき
+    @Override
+    protected void onStop()
+    {
+        _google_api_client.disconnect();
+        super.onStop();
     }
 
     // パーミッションが許可されているときの処理 サンプルコードのlocationStart()
