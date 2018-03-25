@@ -26,6 +26,7 @@ import android.location.Location;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
+import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
 
@@ -34,9 +35,15 @@ public class MainActivity extends AppCompatActivity
                                      GoogleApiClient.OnConnectionFailedListener,
                                      LocationListener
 {
+    // 位置情報の更新間隔(mSec)
+    public static final long _UPDATE_INTERVAL_MILLISEC = 10000;
+    // 位置情報の最短更新間隔(mSec)
+    public static final long _FASTEST_UPDATE_INTERVAL_MILLISEC = 10000;
+
     private LocationManager _location_manager;
     private Location _current_location;
     private GoogleApiClient _google_api_client;
+    private LocationRequest _location_request;
     private static double _current_latitude  = 0.0;
     private static double _current_longitude = 0.0;
 
@@ -51,8 +58,23 @@ public class MainActivity extends AppCompatActivity
     {
         _google_api_client = new GoogleApiClient.Builder(this).addConnectionCallbacks(this).addOnConnectionFailedListener(this).addApi(LocationServices.API).build();
         // todo: 何かインクルードが必要らしい
-        //createLocationRequest();
+        createLocationRequest();
     }
+
+    // LocationRequestのセットアップ
+    protected void createLocationRequest()
+    {
+        _location_request = new LocationRequest();
+        // 位置情報の更新間隔をミリ秒で指定
+        _location_request.setInterval(_UPDATE_INTERVAL_MILLISEC);
+        // 位置情報の最短更新間隔をミリ秒で指定
+        _location_request.setFastestInterval(_FASTEST_UPDATE_INTERVAL_MILLISEC);
+        // 位置情報の精度を(最高精度 PRIORITY_HIGH_ACCURACY に)設定
+        _location_request.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+    }
+
+    // 権限チェック
+    // public void startLocationUpdates(){};
 
     // Activity 生成時(初期化処理)
     @Override
