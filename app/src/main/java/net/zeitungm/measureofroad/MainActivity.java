@@ -1,10 +1,11 @@
 package net.zeitungm.measureofroad;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.graphics.Typeface;
-import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Bundle;
@@ -12,6 +13,7 @@ import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.app.Activity;
 
@@ -22,23 +24,36 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.location.Location;
 
+//多分もう必要ないけど、コンパイルエラーが面倒臭いから位置情報が取得できることを確認してから削除する
+//import android.location.LocationListener;
+
 // Google APIs for Android
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsResult;
+import com.google.android.gms.location.LocationSettingsStatusCodes;
+import com.google.android.gms.location.LocationListener;
 
 
 public class MainActivity extends AppCompatActivity
                           implements GoogleApiClient.ConnectionCallbacks,
                                      GoogleApiClient.OnConnectionFailedListener,
-                                     LocationListener
+                                     com.google.android.gms.location.LocationListener
 {
     // 位置情報の更新間隔(mSec)
     public static final long _UPDATE_INTERVAL_MILLISEC = 10000;
     // 位置情報の最短更新間隔(mSec)
     public static final long _FASTEST_UPDATE_INTERVAL_MILLISEC = 10000;
+
+    // TODO: これは一体何故10なの
+    private static final int _REQUEST_CHECK_SETTINGS = 10;
 
     private LocationManager _location_manager;
     private Location _current_location;
@@ -74,7 +89,50 @@ public class MainActivity extends AppCompatActivity
     }
 
     // 権限チェック
-    // public void startLocationUpdates(){};
+    public void startLocationUpdates()
+    {
+        // LocationSettingRequest を build する builder を作成し、 LocationRequest を追加する
+        LocationSettingsRequest.Builder location_settings_request_builder = new LocationSettingsRequest.Builder().addLocationRequest(_location_request);
+
+        // 現在位置取得の前に位置情報の設定が有効になっているか確認
+        // TODO: result が何の result か調べて rename する
+        PendingResult<LocationSettingsResult> result = LocationServices.SettingsApi.checkLocationSettings( _google_api_client, location_settings_request_builder.build());
+
+        result.setResultCallback( new ResultCallback<LocationSettingsResult>()
+        {
+            @Override
+            public void onResult( @NonNull LocationSettingsResult locationSettingsResult )
+            {
+                final Status status = locationSettingsResult.getStatus();
+
+                switch( status.getStatusCode() )
+                {
+                    case LocationSettingsStatusCodes.SUCCESS:
+                        // 設定が有効になっているので現在位置を取得する
+                        if( ContextCompat.checkSelfPermission( MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION )==PackageManager.PERMISSION_GRANTED )
+                        {
+                            // TODO: 位置情報を取得する処理を書く
+                            LocationServices.FusedLocationApi.requestLocationUpdates( _google_api_client, _location_request, MainActivity.this);
+                        }
+                        break;
+
+                    case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
+                        try
+                        {
+                            status.startResolutionForResult( MainActivity.this, _REQUEST_CHECK_SETTINGS );
+                        }
+                        catch ( IntentSender.SendIntentException e )
+                        {
+
+                        }
+                        break;
+
+                    case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
+                        break;
+                }
+            }
+        });
+    }
 
     // Activity 生成時(初期化処理)
     @Override
@@ -152,7 +210,6 @@ public class MainActivity extends AppCompatActivity
             return ;
         }
 
-        _location_manager.requestLocationUpdates( LocationManager.GPS_PROVIDER /*String*/, 1000/* long */, 50 /* float */, this /*LocationListener */);
     }
 
     @Override
@@ -173,20 +230,8 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    @Override
-    public void onStatusChanged( String provide, int status, Bundle extras)
-    {
-        switch(status)
-        {
-            case LocationProvider.AVAILABLE:
-                break;
-            case LocationProvider.OUT_OF_SERVICE:
-                break;
-            case LocationProvider.TEMPORARILY_UNAVAILABLE:
-                break;
-        }
-    }
-
+    // GoogleApiClient.ConnectionCallbacks インタフェースの抽象メソッド
+    // onConnected() / onConnectionSUspended()
     @Override
     public void onConnected(@Nullable Bundle bundle)
     {
@@ -202,6 +247,8 @@ public class MainActivity extends AppCompatActivity
         _google_api_client.connect();
     }
 
+    // GoogleApiClient.OnConnectionFailedListener() の抽象メソッド
+    // onConnectionFailed()
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connection_result)
     {
@@ -209,31 +256,20 @@ public class MainActivity extends AppCompatActivity
         Toast.makeText( this, "Connection to GoogleAPIClient Failed", Toast.LENGTH_LONG).show();
     }
 
-
+    // com.google.android.gms.location.LocationListener() の抽象メソッド
+    // onLocationChanged()
     @Override
     // locationが変わった時呼ばれる
     public void onLocationChanged( android.location.Location location)
     {
         //とりあえず対症療法的に、locationが変わる度にクラス変数に格納するやつやる
-        _current_latitude  = location.getLatitude();
+        _current_latitude = location.getLatitude();
         _current_longitude = location.getLongitude();
 
         // テスト用テキスト表示領域になんか出力してみる
         TextView tmp_textView;
         tmp_textView = (TextView) findViewById(R.id.test_text);
         tmp_textView.setText("onLocationChanged");
-    }
-
-    @Override
-    public void onProviderEnabled( String provider)
-    {
-
-    }
-
-    @Override
-    public void onProviderDisabled( String provider)
-    {
-
     }
 
     // このメソッドで経緯度を取得しているようだ( HACK: getLocation() の方がよくね？)
