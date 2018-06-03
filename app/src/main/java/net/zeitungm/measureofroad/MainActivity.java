@@ -69,6 +69,43 @@ public class MainActivity extends AppCompatActivity
     //private static double _end_longitude = 0.0;
     private static double _total_distance = 0.0;
 
+    // Activity 生成時(初期化処理)
+    @Override
+    protected void onCreate(Bundle savedInstanceState)
+    {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        SetFont();
+
+        //位置情報取得ボタンの設定
+        Button button_get_location = (Button)findViewById(R.id.button_get_location);
+        // 位置情報取得ボタンが押されたときの処理
+        button_get_location.setOnClickListener(new View.OnClickListener()
+                                               {
+                                                   @Override
+                                                   public void onClick(View v)
+                                                   {
+                                                       //位置情報取得ボタンが押されたときのメソッドを呼び出す
+                                                       GetGeographicalCoordinate();
+                                                   }
+                                               }
+        );
+
+        // アプリケーションがACCESS_FINE_LOCATIONとACCESS_COARSE_LOCATIONのうち、一方でもパーミッションを持っていなかったら、
+        if(ActivityCompat.checkSelfPermission( this, Manifest.permission.ACCESS_FINE_LOCATION)!= PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission( this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+        {
+            ActivityCompat.requestPermissions( this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION,}, 1000);
+        }
+        else
+        {
+            //Toast.makeText( this, "両パーミッション許可済み", Toast.LENGTH_LONG).show();
+            // ここにパーミッションが許可されているときの動作を書く
+            LocationStart();
+        }
+    }
+
     protected synchronized void BuildGoogleApiClient()
     {
         _google_api_client = new GoogleApiClient.Builder(this).addConnectionCallbacks(this).addOnConnectionFailedListener(this).addApi(LocationServices.API).build();
@@ -132,43 +169,6 @@ public class MainActivity extends AppCompatActivity
                 }
             }
         });
-    }
-
-    // Activity 生成時(初期化処理)
-    @Override
-    protected void onCreate(Bundle savedInstanceState)
-    {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        SetFont();
-
-        //位置情報取得ボタンの設定
-        Button button_get_location = (Button)findViewById(R.id.button_get_location);
-        // 位置情報取得ボタンが押されたときの処理
-        button_get_location.setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View v)
-            {
-                //位置情報取得ボタンが押されたときのメソッドを呼び出す
-                GetGeographicalCoordinate();
-            }
-        }
-        );
-
-        // アプリケーションがACCESS_FINE_LOCATIONとACCESS_COARSE_LOCATIONのうち、一方でもパーミッションを持っていなかったら、
-        if(ActivityCompat.checkSelfPermission( this, Manifest.permission.ACCESS_FINE_LOCATION)!= PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission( this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-        {
-            ActivityCompat.requestPermissions( this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION,}, 1000);
-        }
-        else
-        {
-            //Toast.makeText( this, "両パーミッション許可済み", Toast.LENGTH_LONG).show();
-            // ここにパーミッションが許可されているときの動作を書く
-            LocationStart();
-        }
     }
 
     // Activity 開始時
