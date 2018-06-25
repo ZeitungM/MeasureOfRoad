@@ -96,12 +96,16 @@ public class MainActivity extends AppCompatActivity
         if(ActivityCompat.checkSelfPermission( this, Manifest.permission.ACCESS_FINE_LOCATION)!= PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission( this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
         {
+            Toast.makeText( this, "パーミッション未許可", Toast.LENGTH_LONG).show();
             ActivityCompat.requestPermissions( this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION,}, 1000);
         }
         else
         {
-            //Toast.makeText( this, "両パーミッション許可済み", Toast.LENGTH_LONG).show();
+            Toast.makeText( this, "パーミッション許可済み", Toast.LENGTH_LONG).show();
             // ここにパーミッションが許可されているときの動作を書く
+            BuildGoogleApiClient();
+            // hack:とりあえずここに書いてみる
+            startLocationUpdates();
             LocationStart();
         }
     }
@@ -131,6 +135,9 @@ public class MainActivity extends AppCompatActivity
         // LocationSettingRequest を build する builder を作成し、 LocationRequest を追加する
         LocationSettingsRequest.Builder location_settings_request_builder = new LocationSettingsRequest.Builder().addLocationRequest(_location_request);
 
+        final TextView tmp_textView1;
+        tmp_textView1 = (TextView) findViewById(R.id.test_text);
+
         // 現在位置取得の前に位置情報の設定が有効になっているか確認
         // TODO: result が何の result か調べて rename する
         PendingResult<LocationSettingsResult> result = LocationServices.SettingsApi.checkLocationSettings( _google_api_client, location_settings_request_builder.build());
@@ -145,6 +152,7 @@ public class MainActivity extends AppCompatActivity
                 switch( status.getStatusCode() )
                 {
                     case LocationSettingsStatusCodes.SUCCESS:
+                        tmp_textView1.setText("SUCCESS");
                         // 設定が有効になっているので現在位置を取得する
                         if( ContextCompat.checkSelfPermission( MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION )==PackageManager.PERMISSION_GRANTED )
                         {
@@ -154,6 +162,7 @@ public class MainActivity extends AppCompatActivity
                         break;
 
                     case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
+                        tmp_textView1.setText("RESOLUTION_REQUIRED");
                         try
                         {
                             status.startResolutionForResult( MainActivity.this, _REQUEST_CHECK_SETTINGS );
@@ -165,6 +174,7 @@ public class MainActivity extends AppCompatActivity
                         break;
 
                     case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
+                        tmp_textView1.setText("ETTINGS_CHANGE_UNAVAILABLE");
                         break;
                 }
             }
