@@ -156,7 +156,7 @@ public class MainActivity extends AppCompatActivity
                         // 設定が有効になっているので現在位置を取得する
                         if( ContextCompat.checkSelfPermission( MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION )==PackageManager.PERMISSION_GRANTED )
                         {
-                            // TODO: 位置情報を取得する処理を書く
+                            // Google Location Services API で最新の位置情報を更新する
                             LocationServices.FusedLocationApi.requestLocationUpdates( _google_api_client, _location_request, MainActivity.this);
                         }
                         break;
@@ -273,8 +273,11 @@ public class MainActivity extends AppCompatActivity
     public void onLocationChanged( android.location.Location location)
     {
         //とりあえず対症療法的に、locationが変わる度にクラス変数に格納するやつやる
-        _current_latitude = location.getLatitude();
-        _current_longitude = location.getLongitude();
+        _current_location = location;
+
+        // LocationManagerで取得していたころの名残
+        //_current_latitude = location.getLatitude();
+        //_current_longitude = location.getLongitude();
 
         // テスト用テキスト表示領域になんか出力してみる
         TextView tmp_textView;
@@ -327,7 +330,10 @@ public class MainActivity extends AppCompatActivity
 
         //何故か初期化できるけどちゃんと位置情報を取得できない
         //TODO:getLastKnownLocation を後で試す( そういやNULLかどうか確認してた例があったような？ )
-        Location location = new Location("");
+        Location location = new Location(""); // GoogleLocationAPIは距離計測まではやってくれないらしいのでそのために必要
+
+        _current_latitude  = _current_location.getLatitude();
+        _current_longitude = _current_location.getLongitude();
 
         //緯度と経度を取得し、フォーマットを整えてTextViewに書く
         // 対症療法的にクラス変数から引っ張ってくる
